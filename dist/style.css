@@ -1,0 +1,34 @@
+body{
+    background-color: #001016;
+    text-align: center;
+}
+.wave-display-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    height: 100%;
+}
+.wave{
+    stroke:#0092ff;
+    overflow: visible;
+    fill:transparent;
+    position:relative;
+}
+
+.listenerline{
+    stroke:#cab420;
+}
+
+.listenerline.left{
+    stroke:#cab420;
+}
+
+.listenerline.right{
+    stroke:#fa6f00;
+}
+.listenerline.hovered{
+    stroke: #f92ec6;
+}
+.listenerline.dragging{
+    stroke: #FFF;
+}
