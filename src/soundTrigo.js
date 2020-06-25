@@ -28,13 +28,14 @@ export const arrayAsPolar=(arr)=>arr.map((sample,sampleNumber,array)=>{
 export const arrayCartesianToPolar=(arr,dcOffset=0)=>{
     return arr.map(({x,y})=>{
         return{
-
             /** 
              * because we need the negative numbers.
              * Maybe there is a more precise way? 
              * It works at least
              **/
-            r:(x+y)*hypoth-dcOffset,
+            // r:(x+y)*hypoth-dcOffset,
+            // r:Math.sqrt(x*x+y*y)-dcOffset,
+            r:Math.sign(x+y) * Math.sqrt(x*x+y*y)-dcOffset,
             th:Math.atan2(y,x)
         }
     });
@@ -86,3 +87,11 @@ export const arraySquashPolarAxis=(arr,dcOffset=0)=>{
         arrayPolarToCartesianAndSquashX(arr,dcOffset)
     );
 }
+
+/** 
+ * clip values from -1 to 1 in array
+ * @param {number[]} arr
+ * @return {number[]} arr
+ * 
+ */
+export const arrayClipValues=(arr)=>arr.map((v)=>v>1?1:(v<-1?-1:v));

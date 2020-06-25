@@ -8,14 +8,18 @@ body{
     justify-content: center;
     height: 100%;
 }
-.wave{
+svg.wave{
     stroke:#0092ff;
     overflow: visible;
     fill:transparent;
     position:relative;
 }
 .reference{
-    opacity: 0.4;
+    opacity:0.2;
+    fill:none;
+}
+.reference.dragging{
+    opacity: 1;
 }
 .listenerline{
     stroke:#cab420;
@@ -28,9 +32,10 @@ body{
 .right{
     stroke:#fa6f00;
 }
-.listenerline.hovered{
+.draggable.hovered{
     stroke: #f92ec6;
+    z-index: 3;
 }
-.listenerline.dragging{
+.draggable.dragging{
     stroke: #FFF;
 }

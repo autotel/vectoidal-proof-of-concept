@@ -3,31 +3,66 @@ import El from "./El";
 import WaveCircle from "./WaveCircle";
 import PlayWave from "./PlayWave";
 import Dragboard from "./Dragboard";
-import { arrayPolarToCartesian, arrayAsPolar } from "./soundTrigo";
+import { arrayPolarToCartesian, arrayAsPolar, arrayClipValues } from "./soundTrigo";
 import { arrayResample } from "./arrayResample";
-
+import { transformOffset } from "./transformOffset";
+const levelToSvg=50;
 
 /** 
  * @param {JQuery} $path 
  * @param {Dragboard} dragboard 
+ * @param {PlayWave} player 
+ * @param {{value:number}} angleItem 
  */
-const DisplayChannelLine=function($path,dragboard){
-
+const DisplayChannelLine=function($path,dragboard,player,angleItem){
+    
     function posToAngle(x,y){
         x-=0.5;
         y-=0.5;
         return 180 * Math.atan2(y,x) / Math.PI - 90;
     }
-    this.angle=Math.random()*360;
 
     const updateSvg=()=>{
-        $path.css("transform",`rotate(${this.angle + 90}deg)`);
+        $path.css("transform",`rotate(${angleItem.value + 90}deg)`);
     }
     const dragHandler=(mouse)=>{
-        this.angle=posToAngle(mouse.x,mouse.y);
+        angleItem.value=posToAngle(mouse.x,mouse.y);
+        player.updateSound();
         updateSvg();
     }
     const draggable=dragboard.setDraggable($path);
+    draggable.onDrag=dragHandler;
+    updateSvg();
+}
+/** 
+ * @param {JQuery} $el 
+ * @param {Dragboard} dragboard
+ * @param {PlayWave} player 
+ * @param {WaveCircle} wave 
+ */
+const DisplayOffsetReference=function($el,dragboard,player,wave){
+    
+    const $circle=$el.find(".reference");
+    const $wave=$el.find(".wave");
+    const svgToLevel=100/levelToSvg;
+    function posToValue(x,y){
+        x-=0.5;
+        y-=0.5;
+        return Math.sqrt(x*x+y*y)*svgToLevel;
+    }
+    
+    const updateSvg=()=>{
+        $circle.attr("r",`${transformOffset.value*levelToSvg}`);
+    }
+    const dragHandler=(mouse)=>{
+        transformOffset.value=posToValue(mouse.x,mouse.y);
+        wave.clearCache();
+        player.updateSound();
+        updateSvg();
+    }
+    const draggable=dragboard.setDraggable($circle);
+    $wave.on("mousedown",()=>dragboard.startDragging(draggable));
+    $wave.on("mouseup",()=>dragboard.stopDragging());
     draggable.onDrag=dragHandler;
     updateSvg();
 }
@@ -47,9 +82,10 @@ const DisplayWave=function(myWave,myPlayer){
             <path
                 class="wave"
                 M2 1 h1 v1 h1 v1 h-1 v1 h-1 v-1 h-1 v-1 h1 z"></path>
-            <path
+            <circle
                 class="reference"
-                M2 1 h1 v1 h1 v1 h-1 v1 h-1 v-1 h-1 v-1 h1 z"></path>
+                cx="0" cy="0" r="10" 
+                ></circle>
             <path
                 class="test-wave left"
                 d="M2 1 h1 v1 h1 v1 h-1 v1 h-1 v-1 h-1 v-1 h1 z"></path>
@@ -73,16 +109,27 @@ const DisplayWave=function(myWave,myPlayer){
     
         
     const $path=$svgContainer.find("path.wave");
-    const $reference=$svgContainer.find("path.reference");
+    const $reference=$svgContainer.find("circle.reference");
     const $pathLeft=$svgContainer.find("path.test-wave.left");
     const $pathRight=$svgContainer.find("path.test-wave.right");
     const $linegroup=$svgContainer.find("g");
     const dragboard=new Dragboard(this.$el);
 
-    const listenerLines=[
-        new DisplayChannelLine($linegroup.find(".left"),dragboard),
-        new DisplayChannelLine($linegroup.find(".right"),dragboard),
-    ];
+    const chanames = ["left","right"];
+    const listenerLines=[];
+    myPlayer.angles.map((angleItem,index)=>{
+        listenerLines.push(
+            new DisplayChannelLine(
+                $linegroup.find("."+chanames[index]),
+                dragboard,myPlayer,
+                angleItem
+            ),
+        )
+    });
+
+    const referenceCircle=new DisplayOffsetReference(
+        $svgContainer,dragboard,myPlayer,myWave
+    );
 
     $svgContainer.appendTo(this.$el);
 
@@ -93,20 +140,16 @@ const DisplayWave=function(myWave,myPlayer){
      * @returns {string} svg path atr
      */
     function polarWavePath(array){
-        let shorterArray=arrayResample(array,900);
+        let shorterArray=arrayResample(array,200);
+        shorterArray=arrayClipValues(shorterArray);
 
         let coords=arrayPolarToCartesian(
-            arrayAsPolar(array),
-            1
+            arrayAsPolar(shorterArray),
+            transformOffset.value
         );
-        
-        //svg is resizable, so let's think percentually
-        let svgWidth=100;
-        let svgHeight=100;
-        const sizeFactor = 25;
+        const sizeFactor = levelToSvg;
         let svgString="";
         
-
         coords.map(({x,y},index)=>{
             if(isNaN(x)) x=0;
             if(isNaN(y)) y=0;
@@ -124,6 +167,7 @@ const DisplayWave=function(myWave,myPlayer){
 
     /**
      * get an svg path from array
+     * TODO: simplyfy using the new soundTrigo functions
      * @param {number[]} array
      * @returns {string} svg path atr
      */
@@ -186,25 +230,16 @@ const DisplayWave=function(myWave,myPlayer){
         );
         $pathLeft.attr("d",
             cartesianWavePath(
-                myWave.getTransformedArray(
-                    listenerLines[0].angle
-                )
+                myPlayer.angles[0].audioArray
             )
         );
         $pathRight.attr("d",
             cartesianWavePath(
-                myWave.getTransformedArray(
-                    listenerLines[1].angle
-                )
+                myPlayer.angles[1].audioArray
             )
         );
     }
     setInterval(updateWave,90);
 
-    $reference.attr("d",
-            polarWavePath(
-                new Array(100).fill(0)
-            )
-        );
 }
 export default DisplayWave;

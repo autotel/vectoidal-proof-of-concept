@@ -1,6 +1,7 @@
 
 import $ from "jquery";
 const Dragboard=function($el){
+    const dragBoard=this;
     const size={
         x:100,
         y:100,
@@ -47,14 +48,21 @@ const Dragboard=function($el){
         });
         
         $draggable.on("mousedown",(evt)=>{
-            $draggable.addClass("dragging");
-            mouse.drag.elements.add(this);
+            dragBoard.startDragging(this);
         });
 
         /** @param {mouse} mouse */
         this.onDrag=function(mouse){}
     }
-    
+    /** @param {Draggable} draggable */
+    this.startDragging=(draggable)=>{
+        draggable.$el.addClass("dragging");
+        mouse.drag.elements.add(draggable);
+    }
+    this.stopDragging=()=>{
+        dragEndHandler();
+    }
+
     function dragStartHandler(){
         mouse.drag.sx=mouse.x;
         mouse.drag.sy=mouse.y;
@@ -93,6 +101,7 @@ const Dragboard=function($el){
     }
     calculateDomCoords();
     this.setDraggable=($el)=>{
+        $el.addClass("draggable");
         return new Draggable($el);
     }
 }

@@ -12,19 +12,16 @@ export const arrayResample=(array,targetLength)=>{
     const steps=targetLength;
 
     //how many samples to skip on each drawing point
-    let stepsPerValue=length/steps;
+    let stepsPerValue=array.length/steps;
 
     //within the array, get the average level from start to end
     function getAverage(start,end){
         let total=0;
         let fac=1/(end-start);
-        // array.slice(start,end).map((val)=>total+=Math.sqrt(val*val));
-        // total*=fac;
         array.slice(start,end).map((val)=>{
-            const tv=Math.abs(val)
-            if(tv>total)total=val;
+            total+=val
         });
-        return total;
+        return total*fac;
     }
     /** @type  {number[]}  */
     const ret=[];
