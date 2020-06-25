@@ -1,6 +1,9 @@
 import getAudioContext from "./getAudioContext";
+import { arraySquashPolarAxis, twoPi, arrayAsPolar } from "./soundTrigo";
 
 const audioContext=getAudioContext();
+
+
 /**
  * container for an array of samples 
  * it can return these samples from an "angle"
@@ -12,9 +15,13 @@ const WaveCircle=function(){
     const sampleRate=audioContext.sampleRate;
 
     //fill array with test sine
-    let l = 200;
+    let l = 900;
     for(let a=0; a<l; a++){
-        myAudioArray[a]=Math.sin(Math.PI*4*a/l) + Math.random()*0.2;
+        // myAudioArray[a]=Math.sin(Math.PI*2*a/l) + Math.sin(Math.PI*16*a/l)*0.3 + Math.random()*0.03;
+        // myAudioArray[a]=(a%200)/200>0.5?-1:1;
+        myAudioArray[a]=(a%450)/450-0.5;
+        // myAudioArray[a]=Math.sin(Math.PI*2*a/l);
+
     }
 
     /**
@@ -44,6 +51,30 @@ const WaveCircle=function(){
         const ret=getArrayAround(
             angleToSampleNumber(angle)
         );
+        return ret;
+    }
+    /**
+     * Get the contained values as number array
+     * with line transform:
+     * a line is projected from 0,0 as center
+     * and then the distance to that line is
+     * projected for each sample. That is the
+     * return result.
+     * 
+     * This is the best candidate for webassembly
+     * @param {number?} angle
+     * @returns {number[]} the values
+     * */
+    this.getTransformedArray=(angle)=>{
+        const ret=arraySquashPolarAxis(
+            arrayAsPolar(
+                getArrayAround( // squash assumes angle 0, so rotation is added by offsetting array
+                    angleToSampleNumber(angle) 
+                )
+            ),
+            1
+        ).map(({th,r})=>isNaN(r)?0:r); //map back to sample format. Since r is distance, we need to offset it back around 0
+
         return ret;
     }
     /** 

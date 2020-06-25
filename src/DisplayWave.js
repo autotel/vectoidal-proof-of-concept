@@ -3,6 +3,8 @@ import El from "./El";
 import WaveCircle from "./WaveCircle";
 import PlayWave from "./PlayWave";
 import Dragboard from "./Dragboard";
+import { arrayPolarToCartesian, arrayAsPolar } from "./soundTrigo";
+import { arrayResample } from "./arrayResample";
 
 
 /** 
@@ -14,12 +16,12 @@ const DisplayChannelLine=function($path,dragboard){
     function posToAngle(x,y){
         x-=0.5;
         y-=0.5;
-        return 180 * Math.atan2(y,x) / Math.PI ;
+        return 180 * Math.atan2(y,x) / Math.PI - 90;
     }
     this.angle=Math.random()*360;
 
     const updateSvg=()=>{
-        $path.css("transform",`rotate(${this.angle}deg)`);
+        $path.css("transform",`rotate(${this.angle + 90}deg)`);
     }
     const dragHandler=(mouse)=>{
         this.angle=posToAngle(mouse.x,mouse.y);
@@ -46,7 +48,13 @@ const DisplayWave=function(myWave,myPlayer){
                 class="wave"
                 M2 1 h1 v1 h1 v1 h-1 v1 h-1 v-1 h-1 v-1 h1 z"></path>
             <path
-                class="test-wave"
+                class="reference"
+                M2 1 h1 v1 h1 v1 h-1 v1 h-1 v-1 h-1 v-1 h1 z"></path>
+            <path
+                class="test-wave left"
+                d="M2 1 h1 v1 h1 v1 h-1 v1 h-1 v-1 h-1 v-1 h1 z"></path>
+            <path
+                class="test-wave right"
                 d="M2 1 h1 v1 h1 v1 h-1 v1 h-1 v-1 h-1 v-1 h1 z"></path>
             <g fill="none">
                 <path
@@ -65,7 +73,9 @@ const DisplayWave=function(myWave,myPlayer){
     
         
     const $path=$svgContainer.find("path.wave");
-    const $path2=$svgContainer.find("path.test-wave");
+    const $reference=$svgContainer.find("path.reference");
+    const $pathLeft=$svgContainer.find("path.test-wave.left");
+    const $pathRight=$svgContainer.find("path.test-wave.right");
     const $linegroup=$svgContainer.find("g");
     const dragboard=new Dragboard(this.$el);
 
@@ -83,69 +93,32 @@ const DisplayWave=function(myWave,myPlayer){
      * @returns {string} svg path atr
      */
     function polarWavePath(array){
+        let shorterArray=arrayResample(array,900);
+
+        let coords=arrayPolarToCartesian(
+            arrayAsPolar(array),
+            1
+        );
+        
         //svg is resizable, so let's think percentually
         let svgWidth=100;
         let svgHeight=100;
-
-        //maximum wave points to draw
-        const steps=900;
-        //length of the audio segment to draw
-        let length=array.length;
-        //how many samples to skip on each drawing point
-        let stepsPerValue=length/steps;
-        //how big to draw the wave, in pixels
-        let waveRangePx=svgWidth/20;
-        //center of the circle
-        const centerx=0;
-        const centery=0;
-        //radius of the circle. The wave is drawn around it
-        const circleRadius = 25;
-        //precalculation 
-        const twoPi=Math.PI*2
-        //the string that makes the drawing
+        const sizeFactor = 25;
         let svgString="";
-        //within the array, get the average level from start to end
-        function getRep(start,end){
-            let total=0;
-            let fac=1/(end-start);
-            // array.slice(start,end).map((val)=>total+=Math.sqrt(val*val));
-            // total*=fac;
-            array.slice(start,end).map((val)=>{
-                const tv=Math.abs(val)
-                if(tv>total)total=val;
-            });
-            return total;
-        }
-        for(let x=0; x<steps; x+=1){
-            //index in the audio array
-            let index=Math.floor(x*stepsPerValue)
-            //wave voltage level, cartesian
-            let y=0;
-            //for "out from center"
-            // let waveOffset= 2* waveRangePx;
-            //for "around center"
-            let waveOffset=-waveRangePx/2;
+        
 
-            if(stepsPerValue>1){
-                y=getRep(index,Math.floor(index+stepsPerValue))*waveRangePx+waveOffset;
-            }else{
-                y=array[index]*waveRangePx+waveOffset;
-            }
-            //precalculation
-            let sineIndex = twoPi * x /steps;
-            //cartesian to polar
-            let polarx=Math.cos(sineIndex) * (y+circleRadius);
-            let polary=Math.sin(sineIndex) * (y+circleRadius) ;
+        coords.map(({x,y},index)=>{
+            if(isNaN(x)) x=0;
+            if(isNaN(y)) y=0;
             //parse the string and add
-            if(x==0){
-                svgString+=`M${polarx },${polary }`;
+            if(index==0){
+                svgString+=`M${x*sizeFactor },${y*sizeFactor }`;
             }else{
-                svgString+=`\nL${polarx },${polary }`;
+                svgString+=`\nL${x*sizeFactor },${y*sizeFactor }`;
             }
-        }
-        //indicate shape should be closed
-        svgString+=`\nZ`;
+        });
 
+        svgString+=`\nZ`;
         return svgString;
     }
 
@@ -179,9 +152,9 @@ const DisplayWave=function(myWave,myPlayer){
             });
             return total;
         }
-        const xSize=0.5*svgWidth/array.length;
+        const xSize=svgWidth/steps;
         const xStart=-svgWidth/2;
-        const ySize=svgHeight/4;
+        const ySize=svgHeight/8;
         const yStart=svgWidth/2 ;
 
         for(let x=0; x<steps; x+=1){
@@ -211,15 +184,27 @@ const DisplayWave=function(myWave,myPlayer){
                 myWave.getArray(0)
             )
         );
-        console.log(listenerLines[0].angle);
-        $path2.attr("d",
+        $pathLeft.attr("d",
             cartesianWavePath(
-                myWave.getArray(
+                myWave.getTransformedArray(
                     listenerLines[0].angle
                 )
             )
         );
+        $pathRight.attr("d",
+            cartesianWavePath(
+                myWave.getTransformedArray(
+                    listenerLines[1].angle
+                )
+            )
+        );
     }
-    setInterval(updateWave,500);
+    setInterval(updateWave,90);
+
+    $reference.attr("d",
+            polarWavePath(
+                new Array(100).fill(0)
+            )
+        );
 }
 export default DisplayWave;

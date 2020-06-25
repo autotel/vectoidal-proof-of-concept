@@ -14,16 +14,18 @@ body{
     fill:transparent;
     position:relative;
 }
-
+.reference{
+    opacity: 0.4;
+}
 .listenerline{
     stroke:#cab420;
 }
 
-.listenerline.left{
+.left{
     stroke:#cab420;
 }
 
-.listenerline.right{
+.right{
     stroke:#fa6f00;
 }
 .listenerline.hovered{
