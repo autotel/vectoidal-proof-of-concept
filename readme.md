@@ -1,6 +1,7 @@
 Some audio experiment I wanted to try. Js was the easiest way
 
 # play
+**don't use headphones, or detach them from your ears while trying this. extremely loud sounds may come out suddenly**
 
 open /dist/index.html
 
