@@ -1,5 +1,10 @@
 Some audio experiment I wanted to try. Js was the easiest way
 
+It consists on the manipulation of a tiny sound grain by means of angle.
+The lines indicate the angles at which the wave is "viewed"; meaning that one component of that wave gets removed from a polar perspective.
+
+Each sample is assumed as a polar coordinate (where time is theta), projected to a cartesian space, the x component is set to 0, and then is projected back into the polar space. Maybe I write a blog post in the future with more drawings and so on.
+
 # play
 **don't use headphones, or detach them from your ears while trying this. extremely loud sounds may come out suddenly**
 
