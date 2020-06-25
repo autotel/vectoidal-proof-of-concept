@@ -34,7 +34,7 @@ const PlayWave=function(myWave){
      */
     var source=false;
     const myGain = audioContext.createGain();
-    myGain.gain.value=0.5;
+    myGain.gain.value=0.1;
     myGain.connect(audioContext.destination);
 
     this.angles=[
@@ -73,6 +73,7 @@ const PlayWave=function(myWave){
         }
         return ret;
     }
+    //TODO: interpolate the resulting array
     this.updateSound=()=>{
 
         this.angles.map((angleItem)=>{
